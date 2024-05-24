@@ -1,0 +1,280 @@
+---
+title: "Hotel bookings"
+author: "Uzma Anjum"
+date: "2024-05-23"
+output: html_document
+---
+
+## Setting up environment
+Initially I need to set up my R environment by installing and loading required packages such as 'tidyverse','skimr','janitor','dplyr' and 'ggplot2'packages.
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+
+## Import dataset with a new dataframe
+```{r}
+bookings_df <- read_csv("hotel_bookings.csv")
+```
+
+## Get an overview of data
+
+
+
+```{r}
+glimpse(bookings_df)
+
+```
+
+```{r}
+colnames(bookings_df)
+```
+
+## Manipulate data 
+Here I am arranging data in ascending and descending orders on specific columns to focus on bookings that were made in advance
+```{r}
+arrange(bookings_df, lead_time)
+arrange(bookings_df, desc(lead_time))
+```
+
+## New dataframe bookings_df_v2
+And then i created a new dataframe to save the changes made by arrange function
+```{r}
+bookings_df_v2 <- arrange(bookings_df, desc(lead_time))
+```
+
+## Find out max and min values
+finding out the maximum and minimum lead times without sorting the whole dataset using the `arrange()` function. Try it out using the max() and min() functions below:
+```{r}
+max(bookings_df$lead_time)
+min(bookings_df$lead_time)
+mean(bookings_df$lead_time)
+```
+
+## Filter data
+First step will be creating a new data set that only contains data about city hotels.It is done by using the `filter()` function, and name new data frame 'bookings_city':
+```{r}
+bookings_city <-  filter(bookings_df, bookings_df$hotel=="City Hotel")
+```
+```{r}
+head(bookings_city)
+```
+
+### Check what the average lead time for this set of hotels is, just like for all of hotels before:
+```{r}
+mean(bookings_city$lead_time)
+```
+
+### Using 'groupby()' and 'summarize()'
+Now, lets assume I want to know a lot more information about city hotels, including the maximum and minimum lead time.Am also interested in how they are different from resort hotels. I don't want to run each line of code over and over again, so I decide to use the `group_by()`and`summarize()` functions.I can also use the pipe operator to make my code easier. I will store the new data set in a data frame named 'hotel_summary':
+
+```{r}
+bookings_summary <- bookings_df %>%
+                    group_by(hotel) %>%
+                    summarise(average_lead_time=mean(lead_time),
+                    min_lead_time=min(lead_time),
+                    max_lead_time=max(lead_time))
+```
+Now check it out using head() function.
+```{r}
+head(bookings_summary)
+```
+
+## Cleaning data
+Previously I was primarily interested in the following variables: hotel, is_canceled, lead_time. Creating a new data frame with just those columns, calling it `trimmed_df`.
+```{r}
+trimmed_df <- bookings_df %>%  
+              select(hotel, is_canceled, lead_time) 
+```
+
+## Rename() function 
+Renaming hotel to hotel_type for clarity
+```{r}
+trimmed_df %>%  
+select(hotel, is_canceled, lead_time) %>% 
+rename(hotel_type = hotel)
+```
+
+## Unite() function
+Combine arrival month and year using unite function and store it in new data frame 'Arrival_df'
+```{r}
+arrival_df <- bookings_df %>%   
+select(arrival_date_year, arrival_date_month) %>% 
+unite(arrival_month_year, c("arrival_date_month", "arrival_date_year"), sep = " ")
+```
+
+## Mutate() function 
+Create new column to calculate total guest including adults, children,babies
+```{r}
+total_guests_df <- bookings_df %>%  
+  mutate(guests = adults + children + babies)
+```
+
+## Summary Statistics
+Now, calculating summary statistics such as total number of canceled bookings, avg lead time for bookings
+```{r}
+statistics_df <- bookings_df %>%                 
+    summarize(number_canceled = sum(is_canceled),
+    average_lead_time = mean(lead_time))
+```
+
+```{r}
+head(statistics_df)
+```
+
+# Data visualization
+To determine if people with children book hotel rooms in advance.
+
+```{r warning=FALSE}
+ggplot(data = bookings_df) +               
+  geom_point(mapping = aes(x = lead_time, y = children))
+
+```
+
+To map 'stays_in_weekend_nights' on the x-axis and 'children' on the y-axis 
+```{r}
+ggplot(data =bookings_df) +                                           
+  geom_point(mapping = aes(x = stays_in_weekend_nights, y = children))
+```
+
+Previously, `geom_point` was used to make a scatter plot comparing lead time and number of children. Now,`geom_bar` is used to make a bar chart in this code chunk: 
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel))
+```
+
+Now,if I want to know the number of bookings for each distribution type is different depending on whether or not there was a deposit or what market segment they represent. 
+Am using'fill=deposit_type' to accomplish this.
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel, fill=deposit_type))
+```
+
+Now below is the code to answer the question about different market segments.We will use 'fill=market_segment' to accomplish this.
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel, fill=market_segment))
+
+```
+
+After reviewing the charts let us create separate charts for each deposit type and market segment to help them understand the differences more clearly.
+
+## Chart for each deposit type
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel)) +
+  facet_wrap(~deposit_type)
+```
+
+## Chart for each market segment
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel)) +
+  facet_wrap(~market_segment)
+```
+
+## 'facet grid' function
+The `facet_grid` function does something similar. The main difference is that `facet_grid` will include plots even if they are empty. Run the code chunk below to check it out:
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel)) +
+  facet_grid(~deposit_type)
+```
+
+## All in one chart
+
+Now, lets put all of this in one chart and explore the differences by deposit type and market segment.
+
+Notice how the ~ character is being used before the variables that the chart is being split by:
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = distribution_channel)) +
+  facet_wrap(~deposit_type~market_segment)
+```
+
+## creating a bar chart
+Showing each hotel type and market segment.Use different colors to represent each market segment:
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = hotel, fill = market_segment))
+```
+
+Lets use the facet_wrap() function to create a separate plot for each market segment:
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = hotel)) +
+  facet_wrap(~market_segment)
+```
+
+## Add title
+The first thing people will pay attention to when they encounter a data visualization for the first time is at tilte. To add a title, we will add `labs()` at the end of `ggplot()` command and then input a title there as shown below:
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = market_segment)) +
+  facet_wrap(~hotel) +
+  labs(title="Comparison of market segments by hotel type for hotel bookings")
+```
+
+Also  adding another detail about what time period this data covers. To do this, find out when the data is from. 
+
+To do this I used `min()` and 'max()'function on the year column in the data
+```{r}
+min(bookings_df$arrival_date_year)
+```
+
+```{r}
+max(bookings_df$arrival_date_year)
+```
+
+##Save them
+
+Here i need to save them as varaibales in order to use them in labelling.
+```{r}
+mindate <- min(bookings_df$arrival_date_year)
+```
+
+```{r}
+maxdate <- max(bookings_df$arrival_date_year)
+```
+
+## Subtitles
+
+lets add subtitle in the labs() function
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = market_segment)) + facet_wrap(~hotel) +
+  labs(title="Comparison of market segments by hotel type for hotel bookings",
+       subtitle=paste0("Data from: ", mindate, " to ", maxdate))
+```
+
+## Caption
+
+Switching subtitle to caption which will be in bottom right corner
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = market_segment)) + facet_wrap(~hotel) +
+  labs(title="Comparison of market segments by hotel type for hotel bookings",
+       caption=paste0("Data from: ", mindate, " to ", maxdate))
+```
+
+## Making x-axis and y-axis labels very clear
+
+```{r}
+ggplot(data = bookings_df) +
+  geom_bar(mapping = aes(x = market_segment)) + facet_wrap(~hotel) +
+  labs(title="Comparison of market segments by hotel type for hotel bookings",
+       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       x="Market Segment",
+       y="Number of Bookings")
+```
+
+## Saving chart
+```{r}
+ggsave('bookings_df.png',
+       width=16,
+       height=8)
+
+```
+
+
