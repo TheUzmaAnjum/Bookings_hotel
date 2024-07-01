@@ -1,3 +1,7 @@
+## The dataset is downloaded from kaggle.
+## This is implemented in Posit Studio cloud.
+## Below is the source code written to develop an R markdown file.
+## This is the YAML header section
 ---
 title: "Hotel bookings"
 author: "Uzma Anjum"
@@ -132,7 +136,7 @@ ggplot(data = bookings_df) +
 
 ```
 
-To map 'stays_in_weekend_nights' on the x-axis and 'children' on the y-axis 
+To map, place 'stays_in_weekend_nights' on the x-axis and 'children' on the y-axis 
 ```{r}
 ggplot(data =bookings_df) +                                           
   geom_point(mapping = aes(x = stays_in_weekend_nights, y = children))
